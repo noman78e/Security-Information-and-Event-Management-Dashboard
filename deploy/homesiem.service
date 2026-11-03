@@ -1,0 +1,33 @@
+# HomeSIEM as a Linux service (systemd). Installed by install-linux.sh.
+#
+# It runs as its own unprivileged user. Instead of full administrator rights it gets
+# only the three abilities it needs:
+#   CAP_NET_RAW           read packets for the Traffic page
+#   CAP_NET_ADMIN         change firewall rules (blocking devices)
+#   CAP_NET_BIND_SERVICE  receive logs on port 514
+[Unit]
+Description=HomeSIEM, a lightweight home network SIEM
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=homesiem
+Group=homesiem
+WorkingDirectory=/var/lib/homesiem
+ExecStart=/usr/local/bin/homesiem -addr 0.0.0.0:8080 -db /var/lib/homesiem/homesiem.db -rules /var/lib/homesiem/rules.yaml
+Restart=on-failure
+RestartSec=5
+
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/homesiem
+RestrictAddressFamilies=AF_INET AF_INET6 AF_NETLINK AF_PACKET AF_UNIX
+MemoryHigh=250M
+
+[Install]
+WantedBy=multi-user.target

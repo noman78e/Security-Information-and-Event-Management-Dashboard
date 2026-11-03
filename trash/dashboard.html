@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HomeSIEM</title>
+<style>
+:root{--bg:#f3f5f4;--panel:#fff;--ink:#17211f;--mute:#66736f;--line:#d9dfdc;--acc:#0f766e;--hi:#b42318;--warn:#b45309;--ok:#15803d}
+@media (prefers-color-scheme:dark){:root{--bg:#101615;--panel:#18211f;--ink:#e6edeb;--mute:#8a9a95;--line:#2a3633;--acc:#2dd4bf;--hi:#f87171;--warn:#fbbf24;--ok:#4ade80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,"Segoe UI",Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+h1{font-size:18px;margin:0;font-weight:700}
+h2{font-size:15px;margin:0 0 10px}
+.meta{color:var(--mute);font-size:13px}
+main{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;padding:16px 20px}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+section{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;overflow-x:auto}
+.stats{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:12px}
+.stats b{display:block;font-size:22px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-weight:600;color:var(--mute);padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--mute)}
+.on{background:var(--ok)} .blk{background:var(--hi)}
+button{font:inherit;padding:4px 10px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:4px;cursor:pointer}
+button:hover{border-color:var(--acc)} button:focus-visible{outline:2px solid var(--acc)}
+button.primary{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+button.danger{color:var(--hi)}
+.alert{padding:7px 0;border-bottom:1px solid var(--line)}
+.alert .k{font-weight:600}
+.high .k{color:var(--hi)} .warn .k{color:var(--warn)} .info .k{color:var(--acc)}
+canvas{width:100%;height:60px;display:block}
+.empty{color:var(--mute);padding:10px 0}
+</style></head>
+<body>
+<header>
+  <div><h1>HomeSIEM</h1><div class="meta" id="meta">Connecting…</div></div>
+  <div><input id="tok" placeholder="Control token" size="16" aria-label="Control token"> <button class="primary" id="scan">Scan network</button></div>
+</header>
+<main>
+  <section>
+    <div class="stats">
+      <div><b id="sOn">0</b>online</div><div><b id="sAll">0</b>known devices</div>
+      <div><b id="sBlk">0</b>blocked</div><div><b id="sPk">0</b>packets inspected</div>
+    </div>
+    <canvas id="spark" aria-label="Network traffic, bytes per second"></canvas>
+    <h2 style="margin-top:14px">Devices</h2>
+    <table><thead><tr><th>Device</th><th>Address</th><th>Open ports</th><th>Traffic</th><th></th></tr></thead>
+    <tbody id="devs"></tbody></table>
+  </section>
+  <section><h2>Alerts</h2><div id="alerts"></div></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+$('tok').value=localStorage.getItem('tok')||'';
+$('tok').onchange=()=>localStorage.setItem('tok',$('tok').value);
+const fmt=n=>n>1e9?(n/1e9).toFixed(1)+' GB':n>1e6?(n/1e6).toFixed(1)+' MB':n>1e3?(n/1e3).toFixed(0)+' KB':n+' B';
+async function post(path,mac){
+  const r=await fetch(path,{method:'POST',headers:{'X-Token':$('tok').value},body:JSON.stringify({mac})});
+  if(r.status===403)alert('Enter the control token printed when siem.py started.');
+  load();
+}
+function el(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e}
+function btn(label,path,mac,cls){const b=el('button',label,cls);b.onclick=()=>{if(path==='/api/block'&&!confirm('Block '+mac+'?'))return;post(path,mac)};return b}
+function draw(h){
+  const c=$('spark'),w=c.width=c.clientWidth*2,ht=c.height=120,x=c.getContext('2d');
+  x.clearRect(0,0,w,ht);if(!h.length)return;
+  const m=Math.max(...h,1);x.strokeStyle=getComputedStyle(document.body).getPropertyValue('--acc');x.lineWidth=3;x.beginPath();
+  h.forEach((v,i)=>{const px=i/(h.length-1||1)*w,py=ht-4-(v/m)*(ht-8);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();
+}
+async function load(){
+  let s;try{s=await (await fetch('/api/state')).json()}catch(e){$('meta').textContent='Server unreachable';return}
+  $('meta').textContent=`${s.subnet||'…'} · ${s.os} · ${s.scanning?'scanning…':'idle'} · packet capture ${s.sniffer?'on':'off (install scapy)'}`;
+  $('sOn').textContent=s.devices.filter(d=>d.online).length;$('sAll').textContent=s.devices.length;
+  $('sBlk').textContent=s.devices.filter(d=>d.blocked).length;$('sPk').textContent=s.pkts.toLocaleString();
+  draw(s.history);
+  const tb=$('devs');tb.replaceChildren();
+  if(!s.devices.length){const r=el('tr'),c=el('td','No devices yet. The first scan takes about 10 seconds.','empty');c.colSpan=5;r.append(c);tb.append(r)}
+  s.devices.forEach(d=>{
+    const r=el('tr'),a=el('td'),dot=el('span','', 'dot '+(d.blocked?'blk':d.online?'on':''));
+    a.append(dot,el('span',d.name||'Unnamed device'),el('div',d.mac+(d.trusted?' · trusted':''),'meta'));
+    const ip=el('td',d.ip),pt=el('td',d.ports||'-'),tr=el('td','↓'+fmt(d.rx)+'  ↑'+fmt(d.tx));
+    const act=el('td');
+    act.append(btn('Ports','/api/ports',d.mac),' ',btn(d.trusted?'Untrust':'Trust','/api/trust',d.mac),' ',
+      d.blocked?btn('Unblock','/api/unblock',d.mac):btn('Block','/api/block',d.mac,'danger'));
+    r.append(a,ip,pt,tr,act);tb.append(r);
+  });
+  const al=$('alerts');al.replaceChildren();
+  if(!s.alerts.length)al.append(el('div','No alerts yet.','empty'));
+  s.alerts.forEach(x=>{
+    const d=el('div','', 'alert '+x.sev);
+    d.append(el('span',x.kind,'k'),el('span',' '+new Date(x.ts*1000).toLocaleTimeString(),'meta'),el('div',x.msg));
+    al.append(d);
+  });
+}
+$('scan').onclick=()=>post('/api/scan','');
+load();setInterval(load,3000);
+</script></body></html>

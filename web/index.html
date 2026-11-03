@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HomeSIEM</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside class="sidebar">
+  <div class="brand">&#128737; HomeSIEM</div>
+  <nav>
+    <a href="#dashboard" data-view="dashboard">Dashboard</a>
+    <a href="#devices" data-view="devices">Devices</a>
+    <a href="#alerts" data-view="alerts">Alerts</a>
+    <a href="#rules" data-view="rules">Rules</a>
+    <a href="#logs" data-view="logs">Logs</a>
+    <a href="#traffic" data-view="traffic">Traffic</a>
+  </nav>
+  <div class="account">
+    <button id="logout" class="btn small ghost hidden">Sign out</button>
+    <span id="ver"></span>
+  </div>
+  <div class="conn"><span id="dot" class="dot"></span><span id="connText">connecting...</span></div>
+</aside>
+
+<main>
+  <section id="view-dashboard" class="view">
+    <h1>Dashboard</h1>
+    <div class="cards">
+      <div class="card"><div class="label">Devices (online / total)</div><div class="value" id="c-devices">0 / 0</div></div>
+      <div class="card"><div class="label">Open alerts</div><div class="value" id="c-alerts">0</div></div>
+      <div class="card"><div class="label">Open ports found</div><div class="value" id="c-ports">0</div></div>
+      <div class="card"><div class="label">Blocked / speed limited</div><div class="value" id="c-access">0 / 0</div></div>
+      <div class="card"><div class="label">Internet traffic now</div><div class="value small" id="c-traffic">-</div></div>
+      <div class="card"><div class="label">Memory used</div><div class="value"><span id="c-mem">-</span> MB</div></div>
+      <div class="card"><div class="label">Uptime</div><div class="value" id="c-uptime">-</div></div>
+      <div class="card"><div class="label">Database</div><div class="value"><span id="c-db">-</span> KB</div></div>
+    </div>
+    <h2>System</h2>
+    <table class="kv">
+      <tr><td>Scanned network</td><td id="s-net">-</td></tr>
+      <tr><td>Platform</td><td id="s-platform">-</td></tr>
+      <tr><td>CPU cores</td><td id="s-cpus">-</td></tr>
+      <tr><td>Goroutines</td><td id="s-gor">-</td></tr>
+      <tr><td>Dashboards connected</td><td id="s-clients">-</td></tr>
+      <tr><td>Last tick</td><td id="s-last">-</td></tr>
+    </table>
+  </section>
+
+  <section id="view-devices" class="view">
+    <div class="head">
+      <h1>Devices</h1>
+      <div class="actions">
+        <span id="scanStatus" class="muted"></span>
+        <button id="scanBtn" class="btn">Scan now</button>
+        <button id="portScanBtn" class="btn ghost">Scan ports</button>
+      </div>
+    </div>
+    <p class="muted" id="netInfo">&nbsp;</p>
+    <p class="muted" id="portStatus"></p>
+    <div id="accessBanner" class="banner off">Loading access control status...</div>
+    <details class="rulesbox">
+      <summary>Firewall rules currently in effect, and the emergency button</summary>
+      <pre id="accessScript" class="log help"></pre>
+      <p>
+        <button id="releaseAll" class="btn small danger">Release everyone (remove all blocks and speed limits)</button>
+        <span class="muted">If you ever cannot reach the dashboard, run <span class="mono">sudo ./homesiem-linux unblock</span> on the HomeSIEM computer.</span>
+      </p>
+    </details>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead><tr><th>Status</th><th>IP address</th><th>Name</th><th>Vendor</th><th>MAC address</th><th>Access</th><th>Open ports</th><th>First seen</th><th>Last seen</th></tr></thead>
+        <tbody id="devBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-alerts" class="view">
+    <div class="head">
+      <h1>Alerts</h1>
+      <div class="actions"><button id="ackAll" class="btn ghost">Acknowledge all</button></div>
+    </div>
+    <p class="muted">Alerts come from the rules on the Rules page. Acknowledge an alert once you have dealt with it.</p>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead><tr><th>Time</th><th>Severity</th><th>Rule</th><th>Message</th><th></th></tr></thead>
+        <tbody id="alertBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-rules" class="view">
+    <div class="head">
+      <h1>Rules</h1>
+      <div class="actions"><button id="reloadRules" class="btn">Reload rules</button></div>
+    </div>
+    <p class="muted">Rules are stored in <span id="rulesPath" class="mono">rules.yaml</span>. Edit that file, then click
+      Reload. Changes apply at once and need no restart. If the file has a mistake, the old rules stay active and the
+      Logs page explains the problem.</p>
+    <p id="rulesMsg" class="muted"></p>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead><tr><th>Rule</th><th>Status</th><th>Severity</th><th>Quiet period</th><th>Notify</th><th>Settings</th></tr></thead>
+        <tbody id="ruleBody"></tbody>
+      </table>
+    </div>
+
+    <h2>Notifications</h2>
+    <p id="notifyInfo" class="muted"></p>
+    <p><button id="testNotify" class="btn ghost">Send test notification</button> <span id="notifyResult" class="muted"></span></p>
+
+    <div id="pwSection" class="hidden">
+      <h2>Dashboard password</h2>
+      <p class="muted">Change the password used to sign in. Every other sign-in is ended.</p>
+      <p>
+        <input id="pwCur" type="password" class="inp" placeholder="Current password" autocomplete="current-password">
+        <input id="pwNew" type="password" class="inp" placeholder="New password (10+ characters)" autocomplete="new-password">
+        <input id="pwNew2" type="password" class="inp" placeholder="New password again" autocomplete="new-password">
+        <button id="pwChange" class="btn small">Change password</button>
+        <span id="pwMsg" class="muted"></span>
+      </p>
+    </div>
+
+    <div id="demoPanel" class="banner warn hidden">
+      <strong>Demo tools.</strong> Start in demo mode, so there is no real network to attack. These buttons feed a
+      fake attack through the real detectors so you can see the alerts, the log lines and any notification.
+      <p style="margin:10px 0 0">
+        <button class="btn small demo" data-kind="portscan">Simulate a port scan</button>
+        <button class="btn small demo" data-kind="spike">Simulate a traffic spike</button>
+        <button class="btn small demo" data-kind="arp">Simulate ARP spoofing</button>
+      </p>
+    </div>
+  </section>
+
+  <section id="view-logs" class="view">
+    <div class="head">
+      <h1>Logs</h1>
+      <div class="tabs">
+        <button id="tabCollected" class="btn small">Collected logs</button>
+        <button id="tabEvents" class="btn small ghost">HomeSIEM events</button>
+      </div>
+    </div>
+
+    <div id="paneCollected">
+      <p id="logStatus" class="muted"></p>
+      <div class="filters">
+        <input id="fQ" type="search" class="inp" placeholder="Search words (all must match)">
+        <select id="fHost" class="inp"><option value="">All machines</option></select>
+        <select id="fLevel" class="inp">
+          <option value="">Any level</option>
+          <option value="4">Warning or worse</option>
+          <option value="3">Error or worse</option>
+          <option value="2">Critical or worse</option>
+        </select>
+        <select id="fHours" class="inp">
+          <option value="1">Last hour</option>
+          <option value="24" selected>Last 24 hours</option>
+          <option value="168">Last 7 days</option>
+          <option value="0">All time</option>
+        </select>
+        <button id="fSearch" class="btn small">Search</button>
+        <label class="muted"><input type="checkbox" id="fAuto" checked> Auto-refresh</label>
+      </div>
+      <div class="tablewrap">
+        <table class="grid">
+          <thead><tr><th>Time</th><th>Machine</th><th>Program</th><th>Level</th><th>Message</th></tr></thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+      <p><button id="logMore" class="btn small ghost hidden">Load older</button></p>
+
+      <h2>Send logs to HomeSIEM</h2>
+      <pre id="logHelp" class="log help"></pre>
+      <p>
+        <button class="btn small ghost logtest" data-kind="message">Send a test log</button>
+        <button class="btn small ghost logtest" data-kind="bruteforce">Send 6 fake failed logins</button>
+        <span id="logTestMsg" class="muted"></span>
+      </p>
+    </div>
+
+    <div id="paneEvents" class="hidden">
+      <p class="muted">What HomeSIEM itself did: scans, alerts, rule reloads. Kept for 7 days.</p>
+      <pre id="log" class="log"></pre>
+    </div>
+  </section>
+
+  <section id="view-traffic" class="view">
+    <h1>Traffic</h1>
+    <div id="tStatus" class="banner">Loading...</div>
+    <div class="legend">
+      <span class="sw down"></span>Download (internet to your network)
+      <span class="sw up"></span>Upload (your network to the internet)
+      <span id="t-now" class="muted"></span>
+    </div>
+    <canvas id="chart" width="800" height="240"></canvas>
+
+    <h2>Totals since start</h2>
+    <table class="kv">
+      <tr><td>Downloaded</td><td id="t-down">-</td></tr>
+      <tr><td>Uploaded</td><td id="t-up">-</td></tr>
+      <tr><td>Local (device to device)</td><td id="t-lan">-</td></tr>
+      <tr><td>Other (IPv6 internet, ARP, unknown)</td><td id="t-other">-</td></tr>
+      <tr><td>Packets seen</td><td id="t-packets">-</td></tr>
+      <tr><td>Packets not tracked as flows (table full)</td><td id="t-dropped">-</td></tr>
+    </table>
+
+    <h2>Top talkers</h2>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead><tr><th>Device</th><th>IP address</th><th>Sent</th><th>Received</th><th>Sending now</th><th>Receiving now</th></tr></thead>
+        <tbody id="talkBody"></tbody>
+      </table>
+    </div>
+
+    <h2>Top remote hosts (last 10 minutes)</h2>
+    <div class="tablewrap">
+      <table class="grid">
+        <thead><tr><th>Remote address</th><th>Service</th><th>Downloaded</th><th>Uploaded</th><th>Packets</th></tr></thead>
+        <tbody id="remBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

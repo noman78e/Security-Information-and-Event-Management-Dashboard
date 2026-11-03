@@ -1,0 +1,93 @@
+# Starter vendor list (partial). For the complete list, download oui.csv from
+# https://standards-oui.ieee.org/oui/oui.csv and run:  homesiem -oui oui.csv
+B827EB Raspberry Pi Foundation
+DCA632 Raspberry Pi Trading
+E45F01 Raspberry Pi Trading
+D83ADD Raspberry Pi Trading
+28CDC1 Raspberry Pi Trading
+005056 VMware
+000C29 VMware
+080027 VirtualBox
+00155D Microsoft Hyper-V
+001A11 Google
+3C5AB4 Google
+F4F5D8 Google
+001788 Philips Hue
+18B430 Nest Labs
+44650D Amazon
+F0272D Amazon
+001B63 Apple
+000393 Apple
+000A95 Apple
+0017F2 Apple
+3C0754 Apple
+F01898 Apple
+A45E60 Apple
+002500 Apple
+001247 Samsung
+001632 Samsung
+5C0A5B Samsung
+50C7BF TP-Link
+EC086B TP-Link
+F4F26D TP-Link
+14CC20 TP-Link
+002719 TP-Link
+001B21 Intel
+00E04C Realtek
+240AC4 Espressif
+30AEA4 Espressif
+246F28 Espressif
+A4CF12 Espressif
+840D8E Espressif
+CC50E3 Espressif
+5CCF7F Espressif
+18FE34 Espressif
+600194 Espressif
+68C63A Espressif
+84F3EB Espressif
+640980 Xiaomi
+34CE00 Xiaomi
+F8A45F Xiaomi
+7811DC Xiaomi
+00E0FC Huawei
+00055D D-Link
+00179A D-Link
+1C7EE5 D-Link
+00095B Netgear
+00146C Netgear
+A06391 Netgear
+00000C Cisco
+00041F Sony PlayStation
+0019C5 Sony PlayStation
+709E29 Sony PlayStation
+0009BF Nintendo
+0017AB Nintendo
+001F32 Nintendo
+7CBB8A Nintendo
+0050F2 Microsoft
+281878 Microsoft
+7CED8D Microsoft
+001422 Dell
+180373 Dell
+001E0B HP
+3CD92B HP
+00215A HP
+002722 Ubiquiti
+24A43C Ubiquiti
+44D9E7 Ubiquiti
+788A20 Ubiquiti
+FCECDA Ubiquiti
+000D4B Roku
+000E58 Sonos
+5CAAFD Sonos
+7828CA Sonos
+4419B6 Hikvision
+C056E3 Hikvision
+001C62 LG
+00E091 LG
+001132 Synology
+245EBE QNAP
+001349 Zyxel
+000C6E ASUS
+001A92 ASUS
+04D4C4 ASUS

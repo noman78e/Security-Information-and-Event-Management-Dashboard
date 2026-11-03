@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HomeSIEM sign in</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="loginpage">
+<main class="loginbox">
+  <h1>&#128737; HomeSIEM</h1>
+
+  <form id="loginForm" class="hidden" autocomplete="on">
+    <p class="muted">Sign in to the dashboard.</p>
+    <p><input id="pw" type="password" class="inp wide" placeholder="Password" autocomplete="current-password" required></p>
+    <p><button class="btn wide" type="submit">Sign in</button></p>
+    <p id="loginMsg" class="formmsg"></p>
+  </form>
+
+  <form id="setupForm" class="hidden" autocomplete="off">
+    <p><strong>First start: create your password.</strong></p>
+    <p class="muted">The setup code is shown in the window where HomeSIEM was started, and saved in the file
+      <span class="mono">setup-code.txt</span> next to the database. It proves that you control this computer.</p>
+    <p><input id="code" class="inp wide" placeholder="Setup code" autocomplete="off" required></p>
+    <p><input id="pw1" type="password" class="inp wide" placeholder="New password (at least 10 characters)" autocomplete="new-password" required></p>
+    <p><input id="pw2" type="password" class="inp wide" placeholder="New password again" autocomplete="new-password" required></p>
+    <p><button class="btn wide" type="submit">Create password</button></p>
+    <p id="setupMsg" class="formmsg"></p>
+  </form>
+
+  <p id="loading" class="muted">Loading...</p>
+</main>
+<script src="login.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+# HomeSIEM rules.
+#
+# Edit this file, then click "Reload rules" on the Rules page (no restart needed).
+# If the file has a mistake, the old rules stay active and the Logs page tells you why.
+#
+#   enabled:           true / false
+#   severity:          low | medium | high
+#   cooldown_minutes:  after an alert, the same device or source stays quiet this long (0 = never quiet)
+#   notify:            true = this rule may send a notification (see "notify" below)
+#
+# SECURITY: this file can contain passwords and tokens. Do not share it or commit it to Git.
+
+notify:
+  min_severity: high        # only alerts at this level or above are sent out
+  telegram:
+    bot_token: ""           # create a bot with @BotFather
+    chat_id: ""             # your chat id, in quotes
+  webhook:
+    url: ""                 # Slack, Discord, Mattermost or similar incoming-webhook URL
+  email:
+    smtp_host: ""           # for example smtp.gmail.com (uses STARTTLS on port 587)
+    smtp_port: 587
+    username: ""
+    password: ""            # use an app password, not your main password
+    from: ""
+    to: ""
+
+rules:
+  # A device that was not there at the first scan joins the network.
+  new_device:
+    enabled: true
+    severity: medium
+    cooldown_minutes: 0
+    notify: true
+
+  # A risky service is found open on a device.
+  risky_port:
+    enabled: true
+    severity: high
+    cooldown_minutes: 0
+    notify: true
+    ports: [21, 23, 513, 514, 2323, 3389, 5555, 5900, 7547, 37777]
+
+  # Any other port opens on a device that was already scanned before.
+  new_open_port:
+    enabled: true
+    severity: medium
+    cooldown_minutes: 0
+    notify: true
+
+  # Port scan (one address probes many ports on one host) or network sweep
+  # (one address tries one port on many hosts). Needs live capture.
+  port_scan:
+    enabled: true
+    severity: high
+    cooldown_minutes: 5
+    notify: true
+    window_seconds: 10
+    port_threshold: 20      # distinct ports on one host within the window
+    host_threshold: 30      # distinct hosts on one port within the window
+    ignore_self: true       # HomeSIEM's own port scans are not an attack
+    ignore_sources: []      # trusted scanners, e.g. ["192.168.1.50", "10.0.0.0/24"]
+
+  # A device moves far more data in a minute than it normally does. Needs capture.
+  bandwidth_spike:
+    enabled: true
+    severity: medium
+    cooldown_minutes: 15
+    notify: false
+    min_mb_per_minute: 50   # never alert below this, however unusual
+    factor: 5               # alert above this many times the device's usual rate
+    warmup_minutes: 10      # minutes of learning before alerts start
+
+  # A device connects to an outside address and port it has never used before.
+  # Needs capture. Ordinary web, DNS and time traffic is ignored because
+  # websites change addresses constantly.
+  new_destination:
+    enabled: true
+    severity: medium
+    cooldown_minutes: 10
+    notify: false
+    learning_hours: 24      # a device is watched silently for this long first
+    ignore_ports: [53, 80, 123, 443]
+    strict_devices: []      # names, vendors, IPs or MACs where EVERY new destination counts, e.g. ["camera"]
+
+  # Two different devices claim the same IP address (a sign of ARP spoofing). Needs capture.
+  arp_spoofing:
+    enabled: true
+    severity: high
+    cooldown_minutes: 10
+    notify: true
+    conflict_seconds: 60
